@@ -1,0 +1,83 @@
+.simulator-container {
+  padding: 20px;
+}
+
+.simulator-add-form {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 20px;
+  max-width: 500px;
+}
+
+.simulator-add-button {
+  white-space: nowrap;
+}
+
+.simulator-tab-content {
+  padding: 20px;
+  background-color: #f8f9fa;
+  border-radius: 10px;
+  min-height: 700px; /* 살짝 늘림 */
+}
+
+.graphs-container {
+  display: flex;
+  justify-content: space-between;
+  gap: 20px;
+  margin-bottom: 30px;
+}
+
+.graph-wrapper {
+  flex: 1;
+  min-width: 0;
+  background: white;
+  padding: 10px;
+  border-radius: 10px;
+  overflow-x: auto;
+}
+
+.graph-inner {
+  width: 600px; /* 그래프 넓이 고정 */
+  height: 300px;
+}
+
+.alert-box, .predict-box {
+  background: white;
+  padding: 20px;
+  border-radius: 10px;
+  margin-top: 20px;
+}
+
+.alert-box h5, .predict-box h5 {
+  margin-bottom: 15px;
+}
+
+.alert-inner, .predict-result {
+  background-color: #f1f3f5;
+  padding: 10px;
+  border-radius: 8px;
+  max-height: 200px;
+  overflow-y: auto;
+  font-size: 0.9rem;
+}
+
+/* 예측 버튼은 위에 */
+.predict-box button {
+  margin-bottom: 10px;
+}
+
+.device-control-buttons {
+  display: flex;
+  gap: 8px; /* 버튼 간격 추가 */
+  margin-bottom: 15px; /* 버튼 아래 간격 */
+}
+
+.device-control-buttons button {
+  padding: 6px 12px; /* 버튼 내부 패딩 */
+  font-size: 0.9rem;
+  border-radius: 8px; /* 버튼 모서리 부드럽게 */
+}
+
+.simulator-delete-all-button {
+  white-space: nowrap;
+}

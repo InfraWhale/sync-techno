@@ -1,0 +1,35 @@
+.home-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    margin-top: 100px;
+  }
+  
+  .home-buttons {
+    margin-top: 40px;
+    display: flex;
+    gap: 20px;
+  }
+  
+  .home-btn {
+    font-size: 20px;
+    padding: 12px 24px;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.3s;
+  }
+  
+  .home-btn.simulator {
+    background-color: #4caf50;
+    color: white;
+  }
+  
+  .home-btn.api {
+    background-color: #2196f3;
+    color: white;
+  }
+  
+  .home-btn:hover {
+    opacity: 0.8;
+  }

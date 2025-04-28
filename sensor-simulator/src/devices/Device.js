@@ -1,0 +1,118 @@
+const { randomInt, randomFloat } = require("../utils/randomNumber");
+
+class Device {
+  constructor(deviceId) {
+    this.deviceId = deviceId;
+    this.state = "Idle";
+    this.startTime = Date.now();
+    this.temperature = randomInt(24, 26);
+    this.voltage = randomFloat(3.25, 3.35, 0.05);
+    this.vibration = randomFloat(0.005, 0.015, 0.005);
+    this.sensorHistory = []; // 센서 이력
+    this.stopped = false;
+  }
+
+  updateState() {
+    const elapsed = (Date.now() - this.startTime) / 1000;
+    if (this.state === "Idle" && elapsed >= 3) // 30으로 바꿀 것
+      this.state = "Load"; 
+    else if (this.state === "Load" && this.temperature >= 70)
+      this.state = "Overheat";
+    else if (
+      this.state === "Overheat" &&
+      this.voltage <= 2.6 &&
+      this.vibration >= 0.1
+    ) {
+      this.state = "Error";
+    }
+  }
+
+  generateSensorData() {
+    this.updateState();
+
+    switch (this.state) {
+      case 'Idle':
+        this.temperature = randomInt(24, 26);
+        this.voltage = randomFloat(3.25, 3.35, 0.05);
+        this.vibration = randomFloat(0.005, 0.015, 0.005);
+      case "Load":
+        this.temperature += randomInt(1, 2);
+        this.voltage -= randomFloat(0.05, 0.1, 0.05);
+        this.vibration += randomFloat(0.005, 0.01, 0.005);
+        break;
+      case "Overheat":
+        this.temperature = randomInt(70, 80);
+        this.voltage = randomFloat(2.6, 2.8, 0.05);
+        this.vibration = randomFloat(0.08, 0.12, 0.005);
+        break;
+      case "Error":
+        this.temperature = 80;
+        this.voltage = 0.0;
+        this.vibration = 0.0;
+        break;
+    }
+
+    return {
+      deviceId: this.deviceId,
+      timestamp: new Date().toISOString(),
+      // state: this.state, // 지울것
+      temperature: parseFloat(this.temperature.toFixed(1)),
+      voltage: parseFloat(this.voltage.toFixed(2)),
+      vibration: parseFloat(this.vibration.toFixed(3)),
+    };
+  }
+
+  addToHistory(sensorData) {
+    const now = Date.now();
+    // 최근 5분(300초) 이내 데이터만 유지
+    this.sensorHistory = this.sensorHistory.filter(
+      (d) => now - new Date(d.timestamp).getTime() <= 30_000
+    ); // 300_000로 변경할 것
+    this.sensorHistory.push(sensorData);
+  }
+
+  checkVoltageDropAlert() {
+    const now = Date.now();
+    let count = 0;
+
+    // 가장 최근 데이터부터 거꾸로 탐색
+    for (let i = this.sensorHistory.length - 1; i >= 0; i--) {
+      const data = this.sensorHistory[i];
+      const age = now - new Date(data.timestamp).getTime();
+      if (age > 6_000) break; // 1분 넘은 데이터는 무시하고 바로 끝냄 & 60_000 으로 바꾸기
+
+      if (data.voltage < 2.9) {
+        count++;
+        if (count >= 3) return true; // 3개 연속 발견
+      } else {
+        count = 0; // 중간에 2.9 이상 만나면 연속성 깨짐
+      }
+    }
+
+    return false;
+  }
+
+  checkAvgTemperatureAlert() {
+    if (this.sensorHistory.length === 0) return false;
+
+    const avgTemp =
+      this.sensorHistory.reduce((sum, d) => sum + d.temperature, 0) /
+      this.sensorHistory.length;
+
+    return avgTemp > 70;
+  }
+
+  checkTrendAlert() {
+    if (this.sensorHistory.length < 2) return false;
+  
+    const len = this.sensorHistory.length;
+    const prev = this.sensorHistory[len - 2];
+    const curr = this.sensorHistory[len - 1];
+  
+    if (!prev || !curr) return false;
+  
+    return (prev.voltage > curr.voltage) && (prev.temperature < curr.temperature);
+  }
+}
+
+module.exports = Device;

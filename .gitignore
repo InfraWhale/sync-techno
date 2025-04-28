@@ -1,0 +1,14 @@
+# node_modules
+sensor-simulator/node_modules
+sensor-view/node_modules
+
+# env
+sensor-simulator/.env
+sensor-view/.env.development
+sensor-view/.env.production
+
+# 기타
+dist/
+build/
+coverage/
+.DS_Store
