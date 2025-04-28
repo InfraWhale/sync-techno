@@ -36,5 +36,5 @@ jobs:
           sudo docker pull gyqjajang/sensor-simulator
           sudo docker stop sensor-simulator || true
           sudo docker rm sensor-simulator || true
-          sudo docker run --env-file /home/ubuntu/envdir/express/.env -d -p 3000:3000 -e TZ=Asia/Seoul --name sensor-simulator --restart always gyqjajang/sensor-simulator
+          sudo docker run --env-file /home/ubuntu/envdir/.env -d -p 3000:3000 -e TZ=Asia/Seoul --name sensor-simulator --restart always gyqjajang/sensor-simulator
           sudo docker system prune -f --volumes
