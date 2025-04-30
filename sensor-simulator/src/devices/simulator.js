@@ -2,7 +2,12 @@ const Device = require("./Device");
 const eventBus = require("../events/eventBus");
 const redisClient = require('../utils/redisClient');
 const { getStatusByDeviceId } = require("../modules/status/statusService");
-const devices = {}; // device 인스턴스들 저장용
+const {
+  getDevice,
+  setDevice,
+  removeDevice,
+  getAllDeviceIds
+} = require("./devicesAccessor");
 
 // MongoDB에서 과거 센서 이력 로드
 async function loadSensorHistoryFromMongo(deviceId) {
@@ -30,7 +35,7 @@ async function initializeDevice(deviceId, data = null) {
 
   device.sensorHistory = await loadSensorHistoryFromMongo(deviceId);
 
-  devices[deviceId] = device;
+  setDevice(deviceId, device);
 
   if (!device.stopped) {
     device.interval = setInterval(async () => {
@@ -63,7 +68,7 @@ async function initializeDevice(deviceId, data = null) {
 
 // 장비 시작
 async function startDevice(deviceId) {
-  if (devices[deviceId]) {
+  if (getDevice(deviceId)) {
     return { alreadyRunning: true };
   }
 
@@ -88,10 +93,10 @@ async function startDevice(deviceId) {
 
 // 장비 종료
 async function stopDevice(deviceId) {
-  const device = devices[deviceId];
+  const device = getDevice(deviceId);
   if (device) {
     clearInterval(device.interval);
-    delete devices[deviceId];
+    removeDevice(deviceId);
 
     await redisClient.lRem('devices', 0,  deviceId);
     await redisClient.del(`device:${deviceId}`);
@@ -101,13 +106,9 @@ async function stopDevice(deviceId) {
 }
 
 function stopAllDevices() {
-  Object.keys(devices).forEach(deviceId => {
+  getAllDeviceIds().forEach(deviceId => {
     stopDevice(deviceId);
   });
-}
-
-function getAllRunningDeviceIds() {
-  return Object.keys(devices);
 }
 
 // 서버 부팅 시 디바이스 복구
@@ -135,8 +136,6 @@ async function restoreDevicesOnStartup() {
 module.exports = {
   startDevice,
   stopDevice,
-  devices,
   restoreDevicesOnStartup,
   stopAllDevices,
-  getAllRunningDeviceIds,
 };

@@ -1,5 +1,5 @@
 const alertService = require('./alertService');
-const { devices } = require("../../devices/simulator");
+const { getDevice } = require("../../devices/devicesAccessor");
 
 async function getAllAlerts(req, res) {
   try {
@@ -14,7 +14,7 @@ async function getAlertsByDeviceId(req, res) {
   try {
     const { deviceId } = req.params;
 
-    if (!devices[deviceId]) {
+    if (!getDevice(deviceId)) {
       return res.status(404).json({ message: `장비 ${deviceId}(이)가 존재하지 않습니다.` });
     }
 
@@ -38,7 +38,7 @@ async function deleteAlertsByDeviceId(req, res) {
   try {
     const { deviceId } = req.params;
 
-    if (!devices[deviceId]) {
+    if (!getDevice(deviceId)) {
       return res.status(404).json({ message: `장비 ${deviceId}(이)가 존재하지 않습니다.` });
     }
 

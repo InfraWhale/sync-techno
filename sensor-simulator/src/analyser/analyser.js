@@ -1,14 +1,14 @@
 const eventBus = require("../events/eventBus");
-const { devices } = require("../devices/simulator");
 const Alert = require("../models/Alert");
 const { getIO } = require("../utils/socket");
 const { saveStatus } = require("../modules/status/statusRepository");
 const redisClient = require('../utils/redisClient');
+const { getDevice } = require("../devices/devicesAccessor");
 
 eventBus.on("sensorData", async (data) => {
   const io = getIO();
 
-  const device = devices[data.deviceId];
+  const device = getDevice(data.deviceId);
   if (!device) return;
   
   console.log(
@@ -17,12 +17,11 @@ eventBus.on("sensorData", async (data) => {
 
   try {
     await saveStatus(data);
-    // await axios.post(`http://localhost:${PORT}/api/status`, data);
   } catch (error) {
     console.error("상태 저장 실패:", error.message);
   }
 
-  // Redis에 최신 센서 데이터 업데이트 (fire-and-forget)
+  // Redis에 최신 센서 데이터 업데이트
   redisClient.hSet(`device:${data.deviceId}`, {
     temperature: device.temperature,
     humidity: device.humidity,

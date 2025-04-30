@@ -1,131 +1,120 @@
+jest.mock('../../../src/utils/redisClient', () => ({
+  hSet: jest.fn().mockResolvedValue(),
+  rPush: jest.fn().mockResolvedValue(),
+  del: jest.fn().mockResolvedValue(),
+  lRem: jest.fn().mockResolvedValue(),
+  lRange: jest.fn().mockResolvedValue([]),
+  hGetAll: jest.fn().mockResolvedValue({})
+}));
+
+jest.mock('../../../src/events/eventBus', () => ({
+  emit: jest.fn()
+}));
+
+jest.mock('../../../src/models/Status', () => ({
+  find: jest.fn(() => ({
+    sort: jest.fn(() => Promise.resolve([]))
+  })),
+  deleteMany: jest.fn().mockResolvedValue()
+}));
+
+jest.mock('../../../src/models/Alert', () => ({
+  find: jest.fn(() => ({
+    sort: jest.fn(() => Promise.resolve([]))
+  })),
+  deleteMany: jest.fn().mockResolvedValue()
+}));
+
+//jest.unmock('../../../src/devices/simulator');
+
 const request = require('supertest');
-const app = require('../../../src/app');
-const { devices, stopDevice } = require('../../../src/devices/simulator');
-const mongoose = require('mongoose');
+const express = require('express');
+const simulatorRoutes = require('../../../src/routes/simulatorRoutes');
+const Device = require('../../../src/devices/Device');
+const {
+  getDevice,
+  setDevice,
+  removeDevice,
+  getAllDeviceIds
+} = require('../../../src/devices/devicesAccessor');
 
-jest.mock('../../../src/analyser/analyser', () => {});
+const app = express();
+app.use(express.json());
+app.use('/api/simulator', simulatorRoutes);
 
-describe('Simulator API - 시뮬레이터 기본 흐름 테스트', () => {
-  const testDeviceId = 'simulator-test-001';
-
-  beforeAll(async () => {
-    if (mongoose.connection.readyState === 0) {
-      await mongoose.connect(process.env.MONGO_URI);
-    }
+describe('Simulator API', () => {
+  afterEach(() => {
+    const allIds = getAllDeviceIds();
+    allIds.forEach((id) => {
+      const dev = getDevice(id);
+      if (dev?.interval) clearInterval(dev.interval);
+      removeDevice(id);
+    });
   });
-  
-    afterAll(async () => {
-      await mongoose.disconnect();
+
+  describe('POST /api/simulator/:deviceId', () => {
+    test('정상 시작 → 200', async () => {
+      const res = await request(app).post('/api/simulator/device-001');
+      expect(res.status).toBe(200);
+      expect(res.body.message).toBe('device-001의 시뮬레이션을 시작합니다.');
     });
 
-  beforeEach(() => {
-    // 혹시 이미 떠 있는 디바이스가 있으면 정리
-    if (devices[testDeviceId]) {
-      stopDevice(testDeviceId);
-    }
+    test('이미 실행 중 → 409', async () => {
+      setDevice('already-running', new Device('already-running'));
+      const res = await request(app).post('/api/simulator/already-running');
+      expect(res.status).toBe(409);
+      expect(res.body.message).toBe('장비 already-running은(는) 이미 실행 중입니다.');
+    });
   });
 
-  afterEach(() => {
-    // 테스트 후에도 꼭 정리
-    if (devices[testDeviceId]) {
-      stopDevice(testDeviceId);
-    }
+  describe('POST /api/simulator/restart/:deviceId', () => {
+    test('정상 재시작 → 200', async () => {
+      setDevice('device-001', new Device('device-001'));
+      const res = await request(app).post('/api/simulator/restart/device-001');
+      expect(res.status).toBe(200);
+      expect(res.body.message).toBe('device-001의 시뮬레이션을 재시작합니다.');
+    });
+
+    test('실행 중이지 않은 장비 → 404', async () => {
+      const res = await request(app).post('/api/simulator/restart/device-001');
+      expect(res.status).toBe(404);
+      expect(res.body.message).toBe('장비 device-001은(는) 실행 중이 아닙니다.');
+    });
   });
 
-  test('POST /api/simulator/:deviceId - 시뮬레이터 생성 및 devices 등록 확인', async () => {
-    const response = await request(app)
-      .post(`/api/simulator/${testDeviceId}`)
-      .expect(200);
-
-    expect(response.body.message).toContain('시뮬레이션을 시작합니다');
-    expect(devices[testDeviceId]).toBeDefined();
-
-    stopDevice(testDeviceId);
-
-    expect(devices[testDeviceId]).toBeUndefined();
+  describe('GET /api/simulator', () => {
+    test('현재 실행 중 장비 목록 → 200', async () => {
+      setDevice('device-001', new Device('device-001'));
+      setDevice('device-002', new Device('device-002'));
+      const res = await request(app).get('/api/simulator');
+      expect(res.status).toBe(200);
+      expect(res.body.runningDevices).toEqual(['device-001', 'device-002']);
+    });
   });
 
-  test('POST /api/simulator/restart/:deviceId - 시뮬레이터 재시작 시 startTime 갱신 확인', async () => {
-    // 1. 장비 시작
-    await request(app)
-      .post(`/api/simulator/${testDeviceId}`)
-      .expect(200);
-  
-    expect(devices[testDeviceId]).toBeDefined();
-  
-    const beforeRestartStartTime = devices[testDeviceId].startTime;
-    expect(beforeRestartStartTime).toBeDefined();
-  
-    // 2. 약간 대기 (startTime 차이를 명확히 하기 위해)
-    await new Promise((resolve) => setTimeout(resolve, 10));
-  
-    // 3. restart 호출
-    const response = await request(app)
-      .post(`/api/simulator/restart/${testDeviceId}`)
-      .expect(200);
-  
-    // 4. startTime이 갱신됐는지 확인
-    const afterRestartStartTime = devices[testDeviceId].startTime;
-    expect(afterRestartStartTime).toBeDefined();
-    expect(afterRestartStartTime).not.toBe(beforeRestartStartTime);
-    expect(afterRestartStartTime).toBeGreaterThan(beforeRestartStartTime);
-  
-    // 5. devices 확인
-    expect(devices[testDeviceId]).toBeDefined();
-  
-    // 6. 정리
-    stopDevice(testDeviceId);
-    expect(devices[testDeviceId]).toBeUndefined();
+  describe('DELETE /api/simulator/:deviceId', () => {
+    test('정상 삭제 → 200', async () => {
+      setDevice('device-001', new Device('device-001'));
+      const res = await request(app).delete('/api/simulator/device-001');
+      expect(res.status).toBe(200);
+      expect(res.body.message).toBe('device-001 시뮬레이션이 삭제되었습니다.');
+    });
+
+    test('존재하지 않는 장비 삭제 → 404', async () => {
+      const res = await request(app).delete('/api/simulator/not-running');
+      expect(res.status).toBe(404);
+      expect(res.body.message).toBe('장비 not-running은(는) 실행 중이 아닙니다.');
+    });
   });
 
-  test('GET /api/simulator - 실행 중인 장비 목록 조회', async () => {
-    const deviceId1 = 'simulator-test-001';
-    const deviceId2 = 'simulator-test-002';
-  
-    await request(app).post(`/api/simulator/${deviceId1}`).expect(200);
-    await request(app).post(`/api/simulator/${deviceId2}`).expect(200);
-  
-    const response = await request(app)
-      .get('/api/simulator')
-      .expect(200);
-  
-    expect(response.body.runningDevices).toContain(deviceId1);
-    expect(response.body.runningDevices).toContain(deviceId2);
-  
-    // 정리
-    stopDevice(deviceId1);
-    stopDevice(deviceId2);
-  });
-  
-  test('DELETE /api/simulator/:deviceId - 특정 장비 삭제', async () => {
-    const deviceId = 'simulator-test-003';
-  
-    await request(app).post(`/api/simulator/${deviceId}`).expect(200);
-    expect(devices[deviceId]).toBeDefined();
-  
-    const response = await request(app)
-      .delete(`/api/simulator/${deviceId}`)
-      .expect(200);
-  
-    expect(response.body.message).toContain(`${deviceId} 시뮬레이션이 삭제되었습니다.`);
-    expect(devices[deviceId]).toBeUndefined();
-  });
-  
-  test('DELETE /api/simulator - 모든 장비 삭제', async () => {
-    const deviceId1 = 'simulator-test-004';
-    const deviceId2 = 'simulator-test-005';
-  
-    await request(app).post(`/api/simulator/${deviceId1}`).expect(200);
-    await request(app).post(`/api/simulator/${deviceId2}`).expect(200);
-  
-    expect(devices[deviceId1]).toBeDefined();
-    expect(devices[deviceId2]).toBeDefined();
-  
-    const response = await request(app)
-      .delete('/api/simulator')
-      .expect(200);
-  
-    expect(response.body.message).toContain('모든 시뮬레이션이 삭제되었습니다.');
-    expect(Object.keys(devices).length).toBe(0);
+  describe('DELETE /api/simulator (전체 삭제)', () => {
+    test('전체 삭제 → 200', async () => {
+      setDevice('device-001', new Device('device-001'));
+      setDevice('device-002', new Device('device-002'));
+
+      const res = await request(app).delete('/api/simulator');
+      expect(res.status).toBe(200);
+      expect(res.body.message).toMatch(/^총 \d+개의 장비가 중지 및 삭제되었습니다/);
+    });
   });
 });

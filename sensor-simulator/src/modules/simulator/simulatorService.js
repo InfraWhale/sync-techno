@@ -1,5 +1,6 @@
 const simulatorRepository = require('./simulatorRepository');
 const simulator = require('../../devices/simulator');
+const devicesAccessor = require('../../devices/devicesAccessor');
 
 function startDevice(deviceId) {
   simulator.startDevice(deviceId);
@@ -14,7 +15,7 @@ async function restartDevice(deviceId) {
 }
 
 function getRunningDevices() {
-  return simulator.getAllRunningDeviceIds();
+  return devicesAccessor.getAllDeviceIds();
 }
 
 async function deleteDevice(deviceId) {
@@ -24,7 +25,7 @@ async function deleteDevice(deviceId) {
 }
 
 async function deleteAllDevices() {
-  const runningDevices = simulator.getAllRunningDeviceIds();
+  const runningDevices = devicesAccessor.getAllDeviceIds();
 
   if (runningDevices.length === 0) {
     return '현재 실행 중인 장비가 없습니다.';

@@ -1,5 +1,5 @@
 const simulatorService = require('./simulatorService');
-const { devices } = require("../../devices/simulator");
+const { getDevice } = require("../../devices/devicesAccessor");
 
 async function startDevice(req, res) {
   const { deviceId } = req.params;
@@ -8,7 +8,7 @@ async function startDevice(req, res) {
       return res.status(400).json({ message: "deviceId는 필수입니다." });
     }
 
-    if (devices[deviceId]) {
+    if (getDevice(deviceId)) {
       return res.status(409).json({
         message: `장비 ${deviceId}은(는) 이미 실행 중입니다.`,
       });
@@ -33,7 +33,7 @@ async function restartDevice(req, res) {
       return res.status(400).json({ message: "deviceId는 필수입니다." });
     }
 
-    if (!devices[deviceId]) {
+    if (!getDevice(deviceId)) {
       return res.status(404).json({ message: `장비 ${deviceId}은(는) 실행 중이 아닙니다.` });
     }
 
@@ -67,7 +67,7 @@ async function deleteDevice(req, res) {
       return res.status(400).json({ message: "deviceId는 필수입니다." });
     }
 
-    if (!devices[deviceId]) {
+    if (!getDevice(deviceId)) {
       return res.status(404).json({ message: `장비 ${deviceId}은(는) 실행 중이 아닙니다.` });
     }
 
@@ -87,6 +87,7 @@ async function deleteAllDevices(req, res) {
     const message = await simulatorService.deleteAllDevices();
     return res.status(200).json({ message });
   } catch (err) {
+    console.log("@@@@@@@@@@@@@@@@",err);
     return res.status(500).json({
       message: '시뮬레이션 전체 삭제에 실패했습니다.',
       error: err.message,

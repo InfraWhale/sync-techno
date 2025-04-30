@@ -18,4 +18,8 @@ function getIO() {
   return io;
 }
 
-module.exports = { init, getIO };
+function resetIO() {
+  io = null;
+}
+
+module.exports = { init, getIO, resetIO };

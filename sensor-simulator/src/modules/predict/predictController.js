@@ -1,15 +1,10 @@
 const predictService = require("./predictService");
-const { devices } = require("../../devices/simulator");
-// const simulator = require("../../devices/simulator");
-// const devices = simulator.devices;
+const { getDevice } = require("../../devices/devicesAccessor");
 
 function predictDeviceState(req, res) {
   try {
     const { deviceId } = req.params;
-    const device = devices[deviceId];
-    console.log('devices:', devices);
-    console.log('deviceId:', deviceId);
-    console.log('device:', device);
+    const device = getDevice(deviceId);
     if (!device) {
       return res.status(404).json({ message: `${deviceId}가 존재하지 않습니다.` });
     }

@@ -1,5 +1,5 @@
 const statusService = require("./statusService");
-const { devices } = require("../../devices/simulator");
+const { getDevice } = require("../../devices/devicesAccessor");
 
 async function createStatus(req, res) {
   try {
@@ -23,7 +23,7 @@ async function getStatusByDeviceId(req, res) {
   try {
     const { deviceId } = req.params;
 
-    if (!devices[deviceId]) {
+    if (!getDevice(deviceId)) {
       return res.status(404).json({ message: `장비 ${deviceId}(이)가 존재하지 않습니다.` });
     }
 
@@ -40,7 +40,7 @@ async function deleteStatusByDeviceId(req, res) {
   try {
     const { deviceId } = req.params;
 
-    if (!devices[deviceId]) {
+    if (!getDevice(deviceId)) {
       return res.status(404).json({ message: `장비 ${deviceId}(이)가 존재하지 않습니다.` });
     }
 

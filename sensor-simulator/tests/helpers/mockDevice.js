@@ -1,15 +1,13 @@
-const { devices } = require('../../src/devices/simulator');
 const Device = require('../../src/devices/Device');
-
-// const simulator = require('../../src/devices/simulator');
-// const devices = simulator.devices;
+const {
+  setDevice,
+  removeDevice
+} = require('../../src/devices/devicesAccessor');
 
 function mockDevice(deviceId, overrides = {}) {
   const device = new Device(deviceId);
   Object.assign(device, overrides);
-  devices[deviceId] = device;
-  // console.log('[mockDevice] devices:', devices);
-  // console.log('[mockDevice] 등록된 장비:', device.deviceId);
+  setDevice(deviceId, device);
   return device;
 }
 
@@ -18,7 +16,7 @@ function mockDevices(deviceIds) {
 }
 
 function clearMockDevice(deviceId) {
-  delete devices[deviceId];
+  removeDevice(deviceId);
 }
 
 function clearMockDevices(deviceIds) {
