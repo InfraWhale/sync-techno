@@ -102,7 +102,15 @@ const SimulatorPage = () => {
   //  디바이스 추가
   const handleAddDevice = async (e) => {
     e.preventDefault();
-    if (!deviceIdInput || devices.includes(deviceIdInput)) return;
+    if (!deviceIdInput) {
+      setError("Device ID를 입력해주세요.");
+      return;
+    }
+  
+    if (devices.includes(deviceIdInput)) {
+      setError(`장비 ${deviceIdInput}(은)는 이미 생성된 시뮬레이터입니다.`);
+      return;
+    }
     try {
       await startSimulator.mutateAsync(deviceIdInput);
       setDevices(prev => [...prev, deviceIdInput]);
@@ -232,12 +240,35 @@ const SimulatorPage = () => {
           <Tab eventKey={deviceId} title={deviceId} key={deviceId}>
             <div className="simulator-tab-content">
               <div className="device-control-buttons">
-                <Button variant="warning" size="sm" onClick={() => handleRestart(deviceId)}>재시작</Button>
-                <Button variant="danger" size="sm" onClick={() => handleDelete(deviceId)}>삭제</Button>
+                <Button
+                  variant="warning"
+                  size="sm"
+                  onClick={() => {
+                    if (window.confirm(`정말 ${deviceId} 시뮬레이터를 재시작하시겠습니까?`)) {
+                      handleRestart(deviceId);
+                    }
+                  }}
+                >
+                  재시작
+                </Button>
+                <Button
+                  variant="danger"
+                  size="sm"
+                  onClick={() => {
+                    if (window.confirm(`정말 ${deviceId} 시뮬레이터를 삭제하시겠습니까?`)) {
+                      handleDelete(deviceId);
+                    }
+                  }}
+                >
+                  삭제
+                </Button>
               </div>
 
-              <div className="graphs-container">
+              <div className="graphs-container-row">
                 <div className="graph-wrapper"><div className="graph-inner">{renderChart(deviceId, 'Temperature', 'red', '온도')}</div></div>
+                <div className="graph-wrapper"><div className="graph-inner">{renderChart(deviceId, 'Humidity', 'orange', '습도')}</div></div>
+              </div>
+              <div className="graphs-container-row">
                 <div className="graph-wrapper"><div className="graph-inner">{renderChart(deviceId, 'Voltage', 'blue', '전압')}</div></div>
                 <div className="graph-wrapper"><div className="graph-inner">{renderChart(deviceId, 'Vibration', 'green', '진동')}</div></div>
               </div>
