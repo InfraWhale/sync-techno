@@ -1,6 +1,5 @@
 function predict(device) {
-  const history = device.sensorHistory;
-  const startTime = device.startTime;
+  const { sensorHistory: history, startTime } = device;
   
   if (history.length === 0) {
     return "Idle";
@@ -43,7 +42,6 @@ function isOverheat(history, startTime) {
 
   const voltageChanges = [];
   const vibrationChanges = [];
-  let tempDecreaseDetected = false;
 
   for (let i = 1; i < filteredHistory.length; i++) {
     const prev = filteredHistory[i - 1];
@@ -51,10 +49,6 @@ function isOverheat(history, startTime) {
 
     voltageChanges.push(Math.abs(curr.voltage - prev.voltage));
     vibrationChanges.push(Math.abs(curr.vibration - prev.vibration));
-
-    if (curr.temperature < prev.temperature) {
-      tempDecreaseDetected = true;
-    }
   }
 
   const avgVoltageChange =
@@ -69,7 +63,7 @@ function isOverheat(history, startTime) {
     (change) => change > avgVibrationChange * 3
   );
 
-  return voltageOverThreshold || vibrationOverThreshold || tempDecreaseDetected;
+  return voltageOverThreshold || vibrationOverThreshold;
 }
 
 module.exports = { predict };

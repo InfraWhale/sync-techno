@@ -5,6 +5,9 @@ const alertSchema = new mongoose.Schema({
   type: String,
   message: String,
   timestamp: Date,
+},
+{
+  versionKey: false
 });
 
 module.exports = mongoose.model("Alert", alertSchema);

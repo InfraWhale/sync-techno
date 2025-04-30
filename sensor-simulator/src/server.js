@@ -1,6 +1,10 @@
+const { registerGlobalErrorHandlers } = require('./utils/globalErrorHandler');
+registerGlobalErrorHandlers();
+
 const app = require('./app');
 const { createServer } = require('http');
-const { init } = require('./socket'); // init만 가져옴
+const { init } = require('./utils/socket'); // init만 가져옴
+const { restoreDevicesOnStartup } = require('./devices/simulator');
 
 const PORT = process.env.PORT;
 
@@ -19,3 +23,8 @@ eventBus.on('sensorData', (data) => {
 httpServer.listen(PORT, () => {
   console.log(`서버 구동 중`);
 });
+
+// 서버 부팅할 때 장비 복구
+restoreDevicesOnStartup()
+  .then(() => console.log('장비 복구 프로세스 완료'))
+  .catch((err) => console.error('장비 복구 실패', err));

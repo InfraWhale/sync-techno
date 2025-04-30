@@ -1,52 +1,59 @@
 const statusService = require("./statusService");
+const { devices } = require("../../devices/simulator");
 
 async function createStatus(req, res) {
   try {
     await statusService.createStatus(req.body);
-    res.status(201).json({ message: "상태 저장 성공" });
+    res.status(201).json({ message: "상태 저장에 성공했습니다." });
   } catch (err) {
-    res.status(500).json({ error: "상태 저장 실패", details: err.message });
-  }
-}
-
-async function getStatusByDeviceId(req, res) {
-  try {
-    const { deviceId } = req.params;
-    const results = await statusService.getStatusByDeviceId(deviceId);
-    res.json(results);
-  } catch (err) {
-    res.status(500).json({ error: "상태 조회 실패", details: err.message });
+    res.status(500).json({ message: "상태 저장에 실패했습니다.", error: err.message });
   }
 }
 
 async function deleteAllStatus(req, res) {
   try {
     const deletedCount = await statusService.deleteAllStatus();
-    res.json({
-      message: "모든 장비 상태 이력이 삭제되었습니다.",
-      deletedCount,
-    });
+    return res.status(200).json({ message: `총 ${deletedCount}건 삭제되었습니다.` });
   } catch (err) {
-    res.status(500).json({ error: "상태 전체 삭제 실패", details: err.message });
+    res.status(500).json({ message: "상태 전체 삭제에 실패했습니다.", error: err.message });
   }
 }
+
+async function getStatusByDeviceId(req, res) {
+  try {
+    const { deviceId } = req.params;
+
+    if (!devices[deviceId]) {
+      return res.status(404).json({ message: `장비 ${deviceId}(이)가 존재하지 않습니다.` });
+    }
+
+    const results = await statusService.getStatusByDeviceId(deviceId);
+    res.json(results);
+  } catch (err) {
+    res.status(500).json({ message: "상태 조회에 실패했습니다.", error: err.message });
+  }
+}
+
+
 
 async function deleteStatusByDeviceId(req, res) {
   try {
     const { deviceId } = req.params;
+
+    if (!devices[deviceId]) {
+      return res.status(404).json({ message: `장비 ${deviceId}(이)가 존재하지 않습니다.` });
+    }
+
     const deletedCount = await statusService.deleteStatusByDeviceId(deviceId);
-    res.json({
-      message: `${deviceId} 장비의 상태 이력이 삭제되었습니다.`,
-      deletedCount,
-    });
+    return res.status(200).json({ message: `총 ${deletedCount}건 삭제되었습니다.` });
   } catch (err) {
-    res.status(500).json({ error: "상태 개별 삭제 실패", details: err.message });
+    res.status(500).json({ message: "상태 삭제에 실패했습니다.", error: err.message });
   }
 }
 
 module.exports = {
   createStatus,
-  getStatusByDeviceId,
   deleteAllStatus,
+  getStatusByDeviceId,
   deleteStatusByDeviceId,
 };

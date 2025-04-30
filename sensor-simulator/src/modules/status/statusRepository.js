@@ -6,12 +6,12 @@ async function saveStatus(data) {
   return await status.save();
 }
 
-async function findStatusByDeviceId(deviceId) {
-  return await Status.find({ deviceId }).sort({ timestamp: -1 });
-}
-
 async function deleteAll() {
   return await Status.deleteMany({});
+}
+
+async function findStatusByDeviceId(deviceId) {
+  return await Status.find({ deviceId }).sort({ timestamp: -1 });
 }
 
 async function deleteByDeviceId(deviceId) {
@@ -20,7 +20,7 @@ async function deleteByDeviceId(deviceId) {
 
 module.exports = {
   saveStatus,
-  findStatusByDeviceId,
   deleteAll,
+  findStatusByDeviceId,
   deleteByDeviceId,
 };

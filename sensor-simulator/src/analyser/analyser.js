@@ -1,24 +1,34 @@
 const eventBus = require("../events/eventBus");
-const axios = require("axios");
 const { devices } = require("../devices/simulator");
 const Alert = require("../models/Alert");
-const { getIO } = require("../socket");
-const PORT = process.env.PORT;
+const { getIO } = require("../utils/socket");
+const { saveStatus } = require("../modules/status/statusRepository");
+const redisClient = require('../utils/redisClient');
+
 eventBus.on("sensorData", async (data) => {
   const io = getIO();
 
+  const device = devices[data.deviceId];
+  if (!device) return;
+  
   console.log(
-    `[${data.timestamp}] ${data.deviceId} | Temp: ${data.temperature}°C, Volt: ${data.voltage}V, Vib: ${data.vibration}`
+    `[${data.timestamp}] ${data.deviceId} | Temp: ${data.temperature}°C, | Humid: ${data.humidity}% | Volt: ${data.voltage}V, Vib: ${data.vibration}`
   );
 
   try {
-    await axios.post(`http://localhost:${PORT}/api/status`, data);
+    await saveStatus(data);
+    // await axios.post(`http://localhost:${PORT}/api/status`, data);
   } catch (error) {
     console.error("상태 저장 실패:", error.message);
   }
 
-  const device = devices[data.deviceId];
-  if (!device) return;
+  // Redis에 최신 센서 데이터 업데이트 (fire-and-forget)
+  redisClient.hSet(`device:${data.deviceId}`, {
+    temperature: device.temperature,
+    humidity: device.humidity,
+    voltage: device.voltage,
+    vibration: device.vibration
+  });
 
   device.addToHistory(data);
 
@@ -45,16 +55,16 @@ eventBus.on("sensorData", async (data) => {
     }
   };
 
-  // Voltage Drop Alert
+  // 전압 강하 Alert
   if (device.checkVoltageDropAlert()) {
     const message = `1분간 전압이 2.9V 미만인 상태가 3회 이상 발생했습니다. (현재 전압: ${data.voltage}V)`;
     await sendAlert(data.deviceId, "VoltageDrop", message);
   }
 
-  // 평균 온도 Alert
-  if (device.checkAvgTemperatureAlert()) {
-    const message = `최근 5분간 평균 온도가 70°C를 초과했습니다. (현재 온도: ${data.temperature}°C)`;
-    await sendAlert(data.deviceId, "AvgTempHigh", message);
+  // 평균 온도 & 습도 Alert
+  if (device.checkAvgTempAndHumidityHighAlert()) {
+    const message = `최근 5분간 평균 온도 70°C, 평균 습도 80%를 초과했습니다. (현재 온도: ${data.temperature}°C, 현재 습도: ${data.humidity}°C)`;
+    await sendAlert(data.deviceId, "AvgTempAndHumidityHigh", message);
   }
 
   // 전압 감소 + 온도 증가 추세 Alert

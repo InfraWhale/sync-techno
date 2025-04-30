@@ -5,9 +5,9 @@ const statusSchema = new mongoose.Schema(
     deviceId: String,
     timestamp: Date,
     temperature: Number,
+    humidity: Number,
     voltage: Number,
     vibration: Number,
-    // state: String, // 추후 제거
   },
   {
     versionKey: false

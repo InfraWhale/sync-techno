@@ -2,76 +2,147 @@ const request = require('supertest');
 const app = require('../../../src/app');
 const mongoose = require('mongoose');
 const Status = require('../../../src/models/Status');
+const redisClient = require('../../../src/utils/redisClient');
+const {
+  mockDevice,
+  mockDevices,
+  clearMockDevice,
+  clearMockDevices
+} = require('../../helpers/mockDevice');
 
 describe('Status API', () => {
-  beforeAll(async () => {
-    // 이미 app.js 안에서 connectDB() 했으면 별도 연결 필요 없음
-  });
-
-  afterAll(async () => {
-    await mongoose.disconnect();
-  });
-
-  afterEach(async () => {
-    await Status.deleteMany({});  // 각 테스트 후 DB 깨끗하게 정리
-  });
-
+  const singleId = 'device-001';
+  const multipleIds = ['dev-1', 'dev-2'];
   const sampleStatus = {
-    deviceId: "device-001",
+    deviceId: singleId,
     timestamp: new Date().toISOString(),
-    temperature: 25.5,
-    voltage: 3.3,
-    vibration: 0.01
+    temperature: 26.4,
+    voltage: 3.2,
+    vibration: 0.01,
+    humidity: 50.0
   };
 
-  test('POST /api/status - 상태 저장 성공', async () => {
-    const response = await request(app)
-      .post('/api/status')
-      .send(sampleStatus)
-      .expect(201);
-
-    expect(response.body.message).toBe("상태 저장 성공");
-
-    const statuses = await Status.find({});
-    expect(statuses.length).toBe(1);
-    expect(statuses[0].deviceId).toBe(sampleStatus.deviceId);
+  afterAll(async () => {
+    await redisClient.quit();
+    await mongoose.connection.close();
   });
 
-  test('GET /api/status/:deviceId - 특정 장비 상태 조회 성공', async () => {
-    await new Status(sampleStatus).save();
+  describe('POST /api/status (단건 입력)', () => {
+    beforeEach(() => mockDevice(singleId));
+    afterEach(async () => {
+      clearMockDevice(singleId);
+      await Status.deleteMany({});
+    });
 
-    const response = await request(app)
-      .get(`/api/status/${sampleStatus.deviceId}`)
-      .expect(200);
+    test('상태 저장 성공', async () => {
+      const res = await request(app)
+        .post('/api/status')
+        .send(sampleStatus)
+        .expect(201);
 
-    expect(response.body.length).toBeGreaterThan(0);
-    expect(response.body[0].deviceId).toBe(sampleStatus.deviceId);
+      expect(res.body.message).toBe("상태 저장에 성공했습니다.");
+
+      const found = await Status.findOne({ deviceId: singleId });
+      expect(found).not.toBeNull();
+      expect(found.temperature).toBe(sampleStatus.temperature);
+    });
+
+    test('상태 저장 시 필수값 누락', async () => {
+      const invalidPayload = { ...sampleStatus };
+      delete invalidPayload.timestamp;
+
+      const res = await request(app)
+        .post('/api/status')
+        .send(invalidPayload)
+        .expect(400);
+
+      expect(res.body.message).toBe("유효성 검사에 실패했습니다.");
+    });
   });
 
-  test('DELETE /api/status - 모든 상태 삭제 성공', async () => {
-    await new Status(sampleStatus).save();
+  describe('GET /api/status/:deviceId (단건 조회)', () => {
+    beforeEach(() => mockDevice(singleId));
+    afterEach(async () => {
+      clearMockDevice(singleId);
+      await Status.deleteMany({});
+    });
 
-    const response = await request(app)
-      .delete('/api/status')
-      .expect(200);
+    test('특정 장비 상태 이력 조회 성공', async () => {
+      await Status.create(sampleStatus);
 
-    expect(response.body.message).toBe("모든 장비 상태 이력이 삭제되었습니다.");
+      const res = await request(app)
+        .get(`/api/status/${singleId}`)
+        .expect(200);
 
-    const statuses = await Status.find({});
-    expect(statuses.length).toBe(0);
+      expect(res.body.length).toBeGreaterThan(0);
+      expect(res.body[0].deviceId).toBe(singleId);
+    });
+
+    test('존재하지 않는 장비 조회', async () => {
+      const res = await request(app)
+        .get('/api/status/non-existent-id')
+        .expect(404);
+
+      expect(res.body.message).toContain('존재하지 않습니다');
+    });
   });
 
-  test('DELETE /api/status/:deviceId - 특정 장비 상태 삭제 성공', async () => {
-    await new Status(sampleStatus).save();
+  describe('DELETE /api/status/:deviceId (단건 삭제)', () => {
+    beforeEach(() => mockDevice(singleId));
+    afterEach(async () => {
+      clearMockDevice(singleId);
+      await Status.deleteMany({});
+    });
 
-    const response = await request(app)
-      .delete(`/api/status/${sampleStatus.deviceId}`)
-      .expect(200);
+    test('특정 장비 상태 이력 삭제 성공', async () => {
+      await Status.create(sampleStatus);
 
-    expect(response.body.message).toContain(sampleStatus.deviceId);
-    expect(response.body.deletedCount).toBe(1);
+      const res = await request(app)
+        .delete(`/api/status/${singleId}`)
+        .expect(200);
 
-    const statuses = await Status.find({});
-    expect(statuses.length).toBe(0);
+      expect(res.body.message).toMatch(/총 \d+건 삭제되었습니다/);
+
+      const count = await Status.countDocuments({ deviceId: singleId });
+      expect(count).toBe(0);
+    });
+
+    test('존재하지 않는 장비 삭제', async () => {
+      const res = await request(app)
+        .delete('/api/status/non-existent-id')
+        .expect(404);
+
+      expect(res.body.message).toContain('존재하지 않습니다');
+    });
+  });
+
+  describe('DELETE /api/status (전체 삭제)', () => {
+    beforeEach(() => mockDevices(multipleIds));
+    afterEach(async () => {
+      clearMockDevices(multipleIds);
+      await Status.deleteMany({});
+    });
+
+    test('전체 상태 이력 삭제 성공', async () => {
+      for (const id of multipleIds) {
+        await Status.create({
+          deviceId: id,
+          timestamp: new Date().toISOString(),
+          temperature: 25.5,
+          voltage: 3.3,
+          vibration: 0.01,
+          humidity: 50
+        });
+      }
+
+      const res = await request(app)
+        .delete('/api/status')
+        .expect(200);
+
+      expect(res.body.message).toMatch(/총 \d+건 삭제되었습니다/);
+
+      const count = await Status.countDocuments();
+      expect(count).toBe(0);
+    });
   });
 });

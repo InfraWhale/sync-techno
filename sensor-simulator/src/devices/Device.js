@@ -6,6 +6,8 @@ class Device {
     this.state = "Idle";
     this.startTime = Date.now();
     this.temperature = randomInt(24, 26);
+    this.humidity = randomInt(40, 50);
+
     this.voltage = randomFloat(3.25, 3.35, 0.05);
     this.vibration = randomFloat(0.005, 0.015, 0.005);
     this.sensorHistory = []; // 센서 이력
@@ -33,20 +35,24 @@ class Device {
     switch (this.state) {
       case 'Idle':
         this.temperature = randomInt(24, 26);
+        this.humidity = randomInt(40, 50);
         this.voltage = randomFloat(3.25, 3.35, 0.05);
         this.vibration = randomFloat(0.005, 0.015, 0.005);
       case "Load":
         this.temperature += randomInt(1, 2);
+        this.humidity = Math.min(this.humidity + randomInt(2, 5), 100);
         this.voltage -= randomFloat(0.05, 0.1, 0.05);
         this.vibration += randomFloat(0.005, 0.01, 0.005);
         break;
       case "Overheat":
         this.temperature = randomInt(70, 80);
+        this.humidity = randomInt(85, 95);
         this.voltage = randomFloat(2.6, 2.8, 0.05);
         this.vibration = randomFloat(0.08, 0.12, 0.005);
         break;
       case "Error":
         this.temperature = 80;
+        this.humidity = 90;
         this.voltage = 0.0;
         this.vibration = 0.0;
         break;
@@ -55,19 +61,14 @@ class Device {
     return {
       deviceId: this.deviceId,
       timestamp: new Date().toISOString(),
-      // state: this.state, // 지울것
       temperature: parseFloat(this.temperature.toFixed(1)),
+      humidity: parseFloat(this.humidity.toFixed(1)),
       voltage: parseFloat(this.voltage.toFixed(2)),
       vibration: parseFloat(this.vibration.toFixed(3)),
     };
   }
 
   addToHistory(sensorData) {
-    const now = Date.now();
-    // 최근 5분(300초) 이내 데이터만 유지
-    this.sensorHistory = this.sensorHistory.filter(
-      (d) => now - new Date(d.timestamp).getTime() <= 30_000
-    ); // 300_000로 변경할 것
     this.sensorHistory.push(sensorData);
   }
 
@@ -92,14 +93,26 @@ class Device {
     return false;
   }
 
-  checkAvgTemperatureAlert() {
-    if (this.sensorHistory.length === 0) return false;
-
+  checkAvgTempAndHumidityHighAlert() {
+    const now = Date.now();
+    const recentData = [];
+  
+    for (let i = this.sensorHistory.length - 1; i >= 0; i--) {
+      const data = this.sensorHistory[i];
+      const age = now - new Date(data.timestamp).getTime();
+      if (age > 30_000) break; // 5분 넘으면 멈춤 & 300_000으로 바꾸기
+      recentData.push(data);
+    }
+  
+    if (recentData.length === 0) return false;
+  
     const avgTemp =
-      this.sensorHistory.reduce((sum, d) => sum + d.temperature, 0) /
-      this.sensorHistory.length;
-
-    return avgTemp > 70;
+      recentData.reduce((sum, d) => sum + d.temperature, 0) / recentData.length;
+    
+      const avgHumidity =
+    recentData.reduce((sum, d) => sum + d.humidity, 0) / recentData.length;
+  
+    return avgTemp > 70 && avgHumidity > 80;
   }
 
   checkTrendAlert() {

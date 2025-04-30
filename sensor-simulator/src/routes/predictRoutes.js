@@ -37,9 +37,28 @@ const predictController = require("../modules/predict/predictController");
  *                   enum: [Idle, Load, Overheat, Error]
  *                   example: "Load"
  *       404:
- *         description: 장비가 존재하지 않음
+ *         description: 장비가 존재하지 않는 경우
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 error:
+ *                   type: string
+ *                   example: "device-001(이)가 존재하지 않습니다."
  *       500:
- *         description: 장비 상태 예측 실패
+ *         description: 예측 중 서버 오류
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 error:
+ *                   type: string
+ *                   example: "장비상태 예측에 실패했습니다."
+ *                 details:
+ *                   type: string
+ *                   example: Internal server error
  */
 router.get("/:deviceId", predictController.predictDeviceState);
 

@@ -1,64 +1,163 @@
 const request = require('supertest');
 const app = require('../../../src/app');
-const { devices } = require('../../../src/devices/simulator');
 const mongoose = require('mongoose');
+const redisClient = require('../../../src/utils/redisClient');
+const { mockDevice, clearMockDevice } = require('../../helpers/mockDevice');
 
-describe('Predict API - Full State Flow', () => {
-  const testDeviceId = 'device-001';
+describe('GET /api/predict/:deviceId', () => {
+  const deviceId = 'predict-test-device';
 
-  beforeAll(async () => {
-    if (mongoose.connection.readyState === 0) {
-      await mongoose.connect(process.env.MONGO_URI);
-    }
-  });
-  
   afterAll(async () => {
-    await mongoose.disconnect();
-  });
-
-  beforeEach(() => {
-    for (const deviceId in devices) {
-      delete devices[deviceId];
-    }
+    await redisClient.quit();
+    await mongoose.connection.close();
   });
 
   afterEach(() => {
-    for (const deviceId in devices) {
-      delete devices[deviceId];
-    }
+    clearMockDevice(deviceId);
   });
 
-  test('Idle → Load → Overheat → Error 상태 변화를 반영한 예측 테스트', async () => {
-    const now = Date.now();
-    const startTime = now - 5 * 60 * 1000; // 5분 전
+  describe('Idle 상태 예측', () => {
+    test('sensorHistory가 없을 경우 Idle', async () => {
+      mockDevice(deviceId, {
+        startTime: Date.now(),
+        sensorHistory: []
+      });
 
-    devices[testDeviceId] = {
-      startTime,
-      sensorHistory: [
-        // Idle 구간 (처음 30초)
-        { timestamp: new Date(startTime + 5 * 1000).toISOString(), voltage: 3.3, vibration: 0.01, temperature: 26 },
-        { timestamp: new Date(startTime + 10 * 1000).toISOString(), voltage: 3.3, vibration: 0.01, temperature: 26 },
+      const res = await request(app).get(`/api/predict/${deviceId}`).expect(200);
+      expect(res.body.predictedState).toBe('Idle');
+    });
 
-        // Load 구간 (30초~3분)
-        { timestamp: new Date(startTime + 40 * 1000).toISOString(), voltage: 3.4, vibration: 0.015, temperature: 27 },
-        { timestamp: new Date(startTime + 90 * 1000).toISOString(), voltage: 3.5, vibration: 0.017, temperature: 28 },
-        { timestamp: new Date(startTime + 150 * 1000).toISOString(), voltage: 3.3, vibration: 0.02, temperature: 27 },
+    test('최근 데이터가 startTime으로부터 30초 이내일 경우 Idle', async () => {
+      const now = Date.now();
 
-        // Overheat 구간 (3분~4분)
-        { timestamp: new Date(startTime + 200 * 1000).toISOString(), voltage: 5.0, vibration: 0.2, temperature: 45 },
-        { timestamp: new Date(startTime + 220 * 1000).toISOString(), voltage: 5.5, vibration: 0.25, temperature: 44 },
+      mockDevice(deviceId, {
+        startTime: now,
+        sensorHistory: [
+          {
+            timestamp: new Date(now + 500).toISOString(), // 5000으로 변경할것
+            voltage: 3.0,
+            vibration: 0.01
+          }
+        ]
+      });
 
-        // Error 구간 (4분 이후)
-        { timestamp: new Date(startTime + 260 * 1000).toISOString(), voltage: 0, vibration: 0, temperature: 30 },
-        { timestamp: new Date(startTime + 270 * 1000).toISOString(), voltage: 0, vibration: 0, temperature: 30 },
-      ]
-    };
+      const res = await request(app).get(`/api/predict/${deviceId}`).expect(200);
+      expect(res.body.predictedState).toBe('Idle');
+    });
+  });
 
-    // 테스트: 최종 상태를 예측
-    const response = await request(app)
-      .get(`/api/predict/${testDeviceId}`)
-      .expect(200);
+  describe('Error 상태 예측', () => {
+    test('voltage, vibration이 0인 경우 Error', async () => {
+      const now = Date.now();
 
-    expect(response.body.predictedState).toBe('Error');
+      mockDevice(deviceId, {
+        startTime: now,
+        sensorHistory: [
+          {
+            timestamp: new Date(now + 3100).toISOString(), // 31000으로 변경할것
+            voltage: 0,
+            vibration: 0
+          }
+        ]
+      });
+
+      const res = await request(app).get(`/api/predict/${deviceId}`).expect(200);
+      expect(res.body.predictedState).toBe('Error');
+    });
+  });
+
+  describe('Overheat 상태 예측', () => {
+    test('전압 혹은 진동 변화가 급격한 경우 Overheat', async () => {
+      const now = Date.now();
+
+      mockDevice(deviceId, {
+        startTime: now,
+        sensorHistory : [
+          {
+            timestamp: new Date(now + 31000).toISOString(),
+            voltage: 3.0,
+            vibration: 0.01
+          },
+          {
+            timestamp: new Date(now + 32000).toISOString(),
+            voltage: 2.95,
+            vibration: 0.012
+          },
+          {
+            timestamp: new Date(now + 33000).toISOString(),
+            voltage: 2.9,
+            vibration: 0.014
+          },
+          {
+            timestamp: new Date(now + 34000).toISOString(),
+            voltage: 2.85,
+            vibration: 0.016
+          },
+          {
+            timestamp: new Date(now + 35000).toISOString(),
+            voltage: 2.8,
+            vibration: 0.018
+          },
+          {
+            timestamp: new Date(now + 36000).toISOString(),
+            voltage: 2.75,
+            vibration: 0.02
+          },
+          {
+            timestamp: new Date(now + 37000).toISOString(),
+            voltage: 2.7,
+            vibration: 0.022
+          },
+          {
+            timestamp: new Date(now + 38000).toISOString(),
+            voltage: 2.65,
+            vibration: 0.024
+          },
+          {
+            timestamp: new Date(now + 39000).toISOString(),
+            voltage: 1.0, // 급격한 전압 하강
+            vibration: 0.25 // 급격한 진동 상승
+          },
+          {
+            timestamp: new Date(now + 40000).toISOString(),
+            voltage: 1.05,
+            vibration: 0.27
+          }
+        ]
+      });
+
+      const res = await request(app).get(`/api/predict/${deviceId}`).expect(200);
+      expect(res.body.predictedState).toBe('Overheat');
+    });
+  });
+
+  describe('Load 상태 예측', () => {
+    test('기본적인 가동 상태일 경우 Load', async () => {
+      const now = Date.now();
+
+      mockDevice(deviceId, {
+        startTime: now,
+        sensorHistory: [
+          {
+            timestamp: new Date(now + 3100).toISOString(), // 31000으로 변경할것
+            voltage: 3.0,
+            vibration: 0.01
+          },
+          {
+            timestamp: new Date(now + 3200).toISOString(), // 32000으로 변경할것
+            voltage: 3.1,
+            vibration: 0.02
+          }
+        ]
+      });
+
+      const res = await request(app).get(`/api/predict/${deviceId}`).expect(200);
+      expect(res.body.predictedState).toBe('Load');
+    });
+  });
+
+  test('존재하지 않는 장비 요청 시 404 반환', async () => {
+    const res = await request(app).get('/api/predict/non-existent-device').expect(404);
+    expect(res.body.message).toMatch(/존재하지 않습니다/);
   });
 });

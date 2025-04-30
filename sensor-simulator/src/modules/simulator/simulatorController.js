@@ -1,50 +1,96 @@
 const simulatorService = require('./simulatorService');
+const { devices } = require("../../devices/simulator");
 
 async function startDevice(req, res) {
+  const { deviceId } = req.params;
   try {
-    const { deviceId } = req.params;
-    const message = simulatorService.startDevice(deviceId);
-    res.json({ message });
+    if (!deviceId) {
+      return res.status(400).json({ message: "deviceId는 필수입니다." });
+    }
+
+    if (devices[deviceId]) {
+      return res.status(409).json({
+        message: `장비 ${deviceId}은(는) 이미 실행 중입니다.`,
+      });
+    }
+
+    const message = await simulatorService.startDevice(deviceId);
+    return res.status(200).json({ message });
+
   } catch (err) {
-    res.status(500).json({ error: '시뮬레이션 생성 실패', details: err.message });
+    return res.status(500).json({
+      message: `장비 ${deviceId} 시작에 실패했습니다.`,
+      error: err.message,
+    });
   }
 }
 
 async function restartDevice(req, res) {
   try {
     const { deviceId } = req.params;
+
+    if (!deviceId) {
+      return res.status(400).json({ message: "deviceId는 필수입니다." });
+    }
+
+    if (!devices[deviceId]) {
+      return res.status(404).json({ message: `장비 ${deviceId}은(는) 실행 중이 아닙니다.` });
+    }
+
     const message = await simulatorService.restartDevice(deviceId);
-    res.json({ message });
+    return res.status(200).json({ message });
+
   } catch (err) {
-    res.status(500).json({ error: '시뮬레이션 재시작 실패', details: err.message });
+    return res.status(500).json({
+      message: "시뮬레이터 재시작에 실패했습니다.",
+      error: err.message,
+    });
   }
 }
 
 async function getRunningDevices(req, res) {
   try {
     const runningDevices = simulatorService.getRunningDevices();
-    res.json({ runningDevices });
+    return res.status(200).json({ runningDevices });
   } catch (err) {
-    res.status(500).json({ error: '전체 시뮬레이터 조회 실패', details: err.message });
+    return res.status(500).json({
+      message: "전체 시뮬레이터 조회에 실패했습니다.",
+      error: err.message
+    });
   }
 }
 
 async function deleteDevice(req, res) {
+  const { deviceId } = req.params;
   try {
-    const { deviceId } = req.params;
+    if (!deviceId) {
+      return res.status(400).json({ message: "deviceId는 필수입니다." });
+    }
+
+    if (!devices[deviceId]) {
+      return res.status(404).json({ message: `장비 ${deviceId}은(는) 실행 중이 아닙니다.` });
+    }
+
     const message = await simulatorService.deleteDevice(deviceId);
-    res.json({ message });
+    return res.status(200).json({ message });
+
   } catch (err) {
-    res.status(500).json({ error: '시뮬레이션 삭제 실패', details: err.message });
+    return res.status(500).json({
+      message: `장비 ${deviceId} 삭제에 실패했습니다.`,
+      error: err.message
+    });
   }
 }
 
 async function deleteAllDevices(req, res) {
   try {
     const message = await simulatorService.deleteAllDevices();
-    res.json({ message });
+    return res.status(200).json({ message });
   } catch (err) {
-    res.status(500).json({ error: '시뮬레이션 전체 삭제 실패', details: err.message });
+    return res.status(500).json({
+      message: '시뮬레이션 전체 삭제에 실패했습니다.',
+      error: err.message,
+    });
   }
 }
 
