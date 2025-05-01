@@ -29,6 +29,11 @@ jobs:
     - name: Run tests
       run: |
         cd ./sensor-simulator
+        echo "MONGO_URI=${{ secrets.MONGO_URI }}" >> .env
+        echo "MONGO_URI_TEST=${{ secrets.MONGO_URI_TEST }}" >> .env
+        echo "PORT=${{ secrets.PORT }}" >> .env
+        echo "REDIS_HOST=${{ secrets.REDIS_HOST }}" >> .env
+        echo "REDIS_PORT=${{ secrets.REDIS_PORT }}" >> .env
         npm run test -- --ci --silent=false
 
     - name: Build Docker Image
