@@ -7,7 +7,6 @@ const { getDevice } = require("../devices/devicesAccessor");
 
 // sensorData 받아서 저장 및 alert 분석
 eventBus.on("sensorData", async (data) => {
-  const io = getIO();
 
   const device = getDevice(data.deviceId);
   if (!device) return;

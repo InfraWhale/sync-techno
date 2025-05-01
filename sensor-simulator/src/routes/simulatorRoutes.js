@@ -10,7 +10,7 @@ const simulatorController = require('../modules/simulator/simulatorController');
 
 /**
  * @swagger
- * /api/simulator/start:
+ * /api/simulator/start/{deviceId}:
  *   post:
  *     summary: 장비 시뮬레이션 시작
  *     tags: [Simulator]
@@ -232,7 +232,7 @@ router.delete('/:deviceId', simulatorController.deleteDevice);
  * @swagger
  * /api/simulator:
  *   delete:
- *     summary: 전체 장비 시뮬레이터 중지 및 데이터 삭제
+ *     summary: 전체 장비 시뮬레이터 중지
  *     tags: [Simulator]
  *     responses:
  *       200:

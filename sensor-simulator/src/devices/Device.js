@@ -108,7 +108,7 @@ class Device {
   
     if (recentData.length === 0) return false;
 
-    // 5분간의 온도 및 습도 평균값 확인인
+    // 5분간의 온도 및 습도 평균값 확인
     const avgTemp =
       recentData.reduce((sum, d) => sum + d.temperature, 0) / recentData.length;
     
