@@ -3,6 +3,7 @@ const app = require('../../../src/app');
 const mongoose = require('mongoose');
 const redisClient = require('../../../src/utils/redisClient');
 const { mockDevice, clearMockDevice } = require('../../helpers/mockDevice');
+const { SECOND } = require('../../../src/utils/constants');
 
 describe('GET /api/predict/:deviceId', () => {
   const deviceId = 'predict-test-device';
@@ -34,7 +35,7 @@ describe('GET /api/predict/:deviceId', () => {
         startTime: now,
         sensorHistory: [
           {
-            timestamp: new Date(now + 500).toISOString(), // 5000으로 변경할것
+            timestamp: new Date(now + 5*SECOND).toISOString(),
             voltage: 3.0,
             vibration: 0.01
           }
@@ -54,7 +55,7 @@ describe('GET /api/predict/:deviceId', () => {
         startTime: now,
         sensorHistory: [
           {
-            timestamp: new Date(now + 3100).toISOString(), // 31000으로 변경할것
+            timestamp: new Date(now + 31*SECOND).toISOString(),
             voltage: 0,
             vibration: 0
           }
@@ -74,52 +75,52 @@ describe('GET /api/predict/:deviceId', () => {
         startTime: now,
         sensorHistory : [
           {
-            timestamp: new Date(now + 31000).toISOString(),
+            timestamp: new Date(now + 31*SECOND).toISOString(),
             voltage: 3.0,
             vibration: 0.01
           },
           {
-            timestamp: new Date(now + 32000).toISOString(),
+            timestamp: new Date(now + 32*SECOND).toISOString(),
             voltage: 2.95,
             vibration: 0.012
           },
           {
-            timestamp: new Date(now + 33000).toISOString(),
+            timestamp: new Date(now + 33*SECOND).toISOString(),
             voltage: 2.9,
             vibration: 0.014
           },
           {
-            timestamp: new Date(now + 34000).toISOString(),
+            timestamp: new Date(now + 34*SECOND).toISOString(),
             voltage: 2.85,
             vibration: 0.016
           },
           {
-            timestamp: new Date(now + 35000).toISOString(),
+            timestamp: new Date(now + 35*SECOND).toISOString(),
             voltage: 2.8,
             vibration: 0.018
           },
           {
-            timestamp: new Date(now + 36000).toISOString(),
+            timestamp: new Date(now + 36*SECOND).toISOString(),
             voltage: 2.75,
             vibration: 0.02
           },
           {
-            timestamp: new Date(now + 37000).toISOString(),
+            timestamp: new Date(now + 37*SECOND).toISOString(),
             voltage: 2.7,
             vibration: 0.022
           },
           {
-            timestamp: new Date(now + 38000).toISOString(),
+            timestamp: new Date(now + 38*SECOND).toISOString(),
             voltage: 2.65,
             vibration: 0.024
           },
           {
-            timestamp: new Date(now + 39000).toISOString(),
+            timestamp: new Date(now + 39*SECOND).toISOString(),
             voltage: 1.0, // 급격한 전압 하강
             vibration: 0.25 // 급격한 진동 상승
           },
           {
-            timestamp: new Date(now + 40000).toISOString(),
+            timestamp: new Date(now + 40*SECOND).toISOString(),
             voltage: 1.05,
             vibration: 0.27
           }
@@ -139,12 +140,12 @@ describe('GET /api/predict/:deviceId', () => {
         startTime: now,
         sensorHistory: [
           {
-            timestamp: new Date(now + 3100).toISOString(), // 31000으로 변경할것
+            timestamp: new Date(now + 31*SECOND).toISOString(),
             voltage: 3.0,
             vibration: 0.01
           },
           {
-            timestamp: new Date(now + 3200).toISOString(), // 32000으로 변경할것
+            timestamp: new Date(now + 32*SECOND).toISOString(),
             voltage: 3.1,
             vibration: 0.02
           }

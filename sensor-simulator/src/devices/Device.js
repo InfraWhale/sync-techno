@@ -1,4 +1,5 @@
 const { randomInt, randomFloat } = require("../utils/randomNumber");
+const { SECOND } = require('../utils/constants');
 
 class Device {
   constructor(deviceId) {
@@ -14,8 +15,8 @@ class Device {
   }
 
   updateState() {
-    const elapsed = (Date.now() - this.startTime) / 1000;
-    if (this.state === "Idle" && elapsed >= 3) // 30으로 바꿀 것
+    const elapsed = (Date.now() - this.startTime);
+    if (this.state === "Idle" && elapsed >= 30*SECOND)
       this.state = "Load"; 
     else if (this.state === "Load" && this.temperature >= 70)
       this.state = "Overheat";
@@ -80,7 +81,7 @@ class Device {
     for (let i = this.sensorHistory.length - 1; i >= 0; i--) {
       const data = this.sensorHistory[i];
       const age = now - new Date(data.timestamp).getTime();
-      if (age > 6_000) break; // 1분 넘은 데이터는 무시하고 바로 끝냄 & 60_000 으로 바꾸기
+      if (age > 60*SECOND) break; // 1분 넘은 데이터는 무시하고 바로 끝냄
 
       if (data.voltage < 2.9) {
         count++;
@@ -101,7 +102,7 @@ class Device {
     for (let i = this.sensorHistory.length - 1; i >= 0; i--) {
       const data = this.sensorHistory[i];
       const age = now - new Date(data.timestamp).getTime();
-      if (age > 30_000) break; // 5분 넘으면 멈춤 & 300_000으로 바꾸기
+      if (age > 300*SECOND) break; // 5분 넘으면 멈춤
       recentData.push(data);
     }
   

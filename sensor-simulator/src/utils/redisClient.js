@@ -1,4 +1,5 @@
 const redis = require('redis');
+const { SECOND } = require('./constants');
 require('dotenv').config();
 
 const client = redis.createClient({
@@ -7,7 +8,7 @@ const client = redis.createClient({
     port: parseInt(process.env.REDIS_PORT, 10),
     reconnectStrategy: (retries) => {
       console.warn(`Redis 재연결 시도 (${retries})`);
-      return Math.min(retries * 100, 3000); // 최대 3초 간격 재시도
+      return Math.min(retries * 100, 3*SECOND); // 최대 3초 간격 재시도
     },
     keepAlive: true
   }

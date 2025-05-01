@@ -8,6 +8,7 @@ const {
   removeDevice,
   getAllDeviceIds
 } = require("./devicesAccessor");
+const { SECOND } = require("../utils/constants");
 
 // MongoDB에서 과거 센서 이력 로드
 async function loadSensorHistoryFromMongo(deviceId) {
@@ -57,7 +58,7 @@ async function initializeDevice(deviceId, data = null) {
           stopped: 'true'
         });
       }
-    }, 1000); // 10_000 로 바꿀것
+    }, 10*SECOND);
   } else {
     console.log(`장비 ${deviceId}는 중지 상태. 시뮬레이션 실행 안 함.`);
   }

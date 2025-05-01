@@ -1,3 +1,5 @@
+const { SECOND } = require("../../utils/constants");
+
 function predict(device) {
   const { sensorHistory: history, startTime } = device;
   
@@ -26,7 +28,7 @@ function isIdle(history, startTime) {
   const lastTimestamp = new Date(
     history[history.length - 1].timestamp
   ).getTime();
-  return lastTimestamp - startTime <= 3_000; // 30_000으로 변경
+  return lastTimestamp - startTime <= 30*SECOND;
 }
 
 function isError(lastData) {
@@ -35,7 +37,7 @@ function isError(lastData) {
 
 function isOverheat(history, startTime) {
   const filteredHistory = history.filter(
-    (d) => new Date(d.timestamp).getTime() - startTime > 3_000 // 30_000으로 변경
+    (d) => new Date(d.timestamp).getTime() - startTime > 30*SECOND
   );
 
   if (filteredHistory.length < 2) return false;
