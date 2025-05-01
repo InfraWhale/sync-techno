@@ -36,6 +36,8 @@ export const useRestartSimulator = () => {
 export const useDeleteSimulator = () => {
   return useMutation({
     mutationFn: async (deviceId) => {
+      await axios.delete(`${API_BASE_URL}/api/status/${deviceId}`);
+      await axios.delete(`${API_BASE_URL}/api/alerts/${deviceId}`);
       await axios.delete(`${API_BASE_URL}/api/simulator/${deviceId}`);
     },
   });
@@ -44,9 +46,9 @@ export const useDeleteSimulator = () => {
 export const useDeleteAllSimulators = () => {
     return useMutation({
       mutationFn: async () => {
-        await axios.delete(`${API_BASE_URL}/api/simulator`);
         await axios.delete(`${API_BASE_URL}/api/status`);
         await axios.delete(`${API_BASE_URL}/api/alerts`);
+        await axios.delete(`${API_BASE_URL}/api/simulator`);
       }
     });
   };
