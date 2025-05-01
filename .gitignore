@@ -4,6 +4,7 @@ sensor-view/node_modules
 
 # env
 sensor-simulator/.env
+sensor-simulator/.env.test
 sensor-view/.env.development
 sensor-view/.env.production
 

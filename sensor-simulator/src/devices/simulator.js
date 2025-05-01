@@ -42,7 +42,6 @@ async function initializeDevice(deviceId, data = null) {
       const sensorData = device.generateSensorData();
       eventBus.emit('sensorData', sensorData);
 
-      // Redis에 최신 센서 데이터 업데이트 (fire-and-forget)
       redisClient.hSet(`device:${deviceId}`, {
         temperature: device.temperature,
         humidity: device.humidity,
@@ -120,7 +119,7 @@ async function restoreDevicesOnStartup() {
     for (const deviceId of deviceIds) {
       const data = await redisClient.hGetAll(`device:${deviceId}`);
       if (!data || Object.keys(data).length === 0) {
-        console.warn(`device:${deviceId} 데이터 없음. 스킵.`);
+        console.warn(`device:${deviceId} 복구할 데이터 없음.`);
         continue;
       }
 

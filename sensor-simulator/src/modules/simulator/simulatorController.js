@@ -87,7 +87,6 @@ async function deleteAllDevices(req, res) {
     const message = await simulatorService.deleteAllDevices();
     return res.status(200).json({ message });
   } catch (err) {
-    console.log("@@@@@@@@@@@@@@@@",err);
     return res.status(500).json({
       message: '시뮬레이션 전체 삭제에 실패했습니다.',
       error: err.message,

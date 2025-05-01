@@ -8,26 +8,20 @@ async function getAllAlerts() {
 async function getAlertsByDeviceId(deviceId) {
   const cacheKey = `alerts:${deviceId}`;
 
-  // 장비 상태 확인
   const deviceData = await redisClient.hGetAll(`device:${deviceId}`);
   const isStopped = deviceData?.stopped === 'true';
 
-  // 캐시 HIT
   if (isStopped) {
     const cached = await redisClient.get(cacheKey);
     if (cached) {
-      //console.log(`[캐시 HIT] alerts:${deviceId}`);
       return JSON.parse(cached);
     }
   }
 
-  // DB 조회
   const alerts = await alertRepository.findByDeviceId(deviceId);
 
-  // 캐시 저장
   if (isStopped && alerts.length > 0) {
     await redisClient.set(cacheKey, JSON.stringify(alerts));
-    //console.log(`[alerts 캐시 저장] ${deviceId}`);
   }
 
   return alerts;

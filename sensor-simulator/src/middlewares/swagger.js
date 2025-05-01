@@ -17,7 +17,7 @@ const swaggerOptions = {
       },
     ],
   },
-  apis: ['./src/routes/*.js', './src/modules/**/*.js'], // 이 경로에 swagger 주석 작성
+  apis: ['./src/routes/*.js', './src/modules/**/*.js'], // swagger 주석이 작성되어야 하는 경로
 };
 
 const specs = swaggerJsdoc(swaggerOptions);

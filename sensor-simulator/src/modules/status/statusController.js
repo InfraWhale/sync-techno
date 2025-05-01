@@ -34,8 +34,6 @@ async function getStatusByDeviceId(req, res) {
   }
 }
 
-
-
 async function deleteStatusByDeviceId(req, res) {
   try {
     const { deviceId } = req.params;

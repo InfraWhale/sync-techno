@@ -7,10 +7,9 @@ class Device {
     this.startTime = Date.now();
     this.temperature = randomInt(24, 26);
     this.humidity = randomInt(40, 50);
-
     this.voltage = randomFloat(3.25, 3.35, 0.05);
     this.vibration = randomFloat(0.005, 0.015, 0.005);
-    this.sensorHistory = []; // 센서 이력
+    this.sensorHistory = [];
     this.stopped = false;
   }
 
@@ -72,6 +71,7 @@ class Device {
     this.sensorHistory.push(sensorData);
   }
 
+  // 전압 강하 확인
   checkVoltageDropAlert() {
     const now = Date.now();
     let count = 0;
@@ -84,15 +84,16 @@ class Device {
 
       if (data.voltage < 2.9) {
         count++;
-        if (count >= 3) return true; // 3개 연속 발견
+        if (count >= 3) return true; // 3개 연속 발견 시 true
       } else {
-        count = 0; // 중간에 2.9 이상 만나면 연속성 깨짐
+        count = 0; // 연속성 깨진 경우 count 초기화
       }
     }
 
     return false;
   }
 
+  // 평균 온도 & 습도 확인
   checkAvgTempAndHumidityHighAlert() {
     const now = Date.now();
     const recentData = [];
@@ -105,7 +106,8 @@ class Device {
     }
   
     if (recentData.length === 0) return false;
-  
+
+    // 5분간의 온도 및 습도 평균값 확인인
     const avgTemp =
       recentData.reduce((sum, d) => sum + d.temperature, 0) / recentData.length;
     
@@ -115,6 +117,7 @@ class Device {
     return avgTemp > 70 && avgHumidity > 80;
   }
 
+  // 전압 감소 + 온도 증가 추세 확인
   checkTrendAlert() {
     if (this.sensorHistory.length < 2) return false;
   

@@ -43,7 +43,7 @@ const SimulatorPage = () => {
   const deleteAllSimulators = useDeleteAllSimulators();
   const predictState = usePredictState();
 
-  //  서버에서 이미 실행중인 디바이스 복원 (axios 직접)
+  //  서버에서 이미 실행중인 디바이스 복원
   useEffect(() => {
     const fetchInitialData = async () => {
       if (runningDevices) {
@@ -127,7 +127,6 @@ const SimulatorPage = () => {
   const handleRestart = async (deviceId) => {
     try {
       await restartSimulator.mutateAsync(deviceId);
-      // alert(`${deviceId} 시뮬레이터 재시작 완료`);
       setDeviceDataMap(prev => ({ ...prev, [deviceId]: [] }));
       setAlertsMap(prev => ({ ...prev, [deviceId]: [] }));
       setPredictedMap(prev => ({ ...prev, [deviceId]: [] }));
@@ -280,7 +279,7 @@ const SimulatorPage = () => {
                     <div key={idx}>
                       [{new Date(alert.timestamp).toLocaleTimeString()}] {alert.message}
                     </div>
-                  )) : '(아직 알림 없음)'}
+                  )) : '(알림 없음)'}
                 </div>
 
                 <div className="predict-box">
@@ -290,7 +289,7 @@ const SimulatorPage = () => {
                   <div className="predict-result">
                     {predictedMap[deviceId]?.length > 0 ? predictedMap[deviceId].map((text, idx) => (
                       <div key={idx}>{text}</div>
-                    )) : '(아직 예측 기록 없음)'}
+                    )) : '(예측 기록 없음)'}
                   </div>
                 </div>
               </div>

@@ -11,8 +11,6 @@ async function deleteAllStatusAndAlerts() {
   await Alert.deleteMany({});
 }
 
-
-
 module.exports = {
   deleteStatusAndAlertsByDeviceId,
   deleteAllStatusAndAlerts
